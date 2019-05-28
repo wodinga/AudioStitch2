@@ -13,8 +13,6 @@ import AVFoundation
 import AVKit
 import Foundation
 
-let rect = CGRect(x: 0, y: 0, width: 300, height: 500)
-
 //: This is where we select the audio files that will be processed
 
 let username = NSUserName()
@@ -32,18 +30,16 @@ var edmssSegments = ["Sat2100",
 
 
 
-func exportFile(_ paths:[String], with name:String) -> AVAssetExportSession?{
-    let assets = paths.map{ path in AVURLAsset(url: URL(fileURLWithPath: path))}
+func exportFile(_ names:[String], with name:String, isOld: Bool) -> AVAssetExportSession?{
+    let paths = names.map{basePath + $0}
+        //        .map{$0 + " _old"}
+        .map{$0 + "\((isOld) ? "_old" : "").mp3"}
 
+    let assets = paths.map{ path in AVURLAsset(url: URL(fileURLWithPath: path))}
+    
     let composition = AVMutableComposition()
 
     AVAssetExportSession.exportPresets(compatibleWith: assets[0])
-
-    paths.map{basePath + $0}
-        // I comment or uncomment this line depending on if I'm trying to combine this week's or last week's show
-        //        .map{$0 + " _old"}
-        .map{$0 + ".mp3"}
-
     //Make aure they're all audio files
     debugPrint("asserting")
     assets.forEach{asset in assert(asset.tracks[0].mediaType == .audio)}
@@ -63,7 +59,7 @@ func exportFile(_ paths:[String], with name:String) -> AVAssetExportSession?{
     //Export to .m4a audio file
     let exporter = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
 
-    exporter?.outputURL = URL(fileURLWithPath: "/Users/\(username)/Desktop/\(name).m4a")
+    exporter?.outputURL = URL(fileURLWithPath: "/Users/\(username)/Desktop/\(name)\((isOld) ? "_old" : "").m4a")
     exporter?.outputFileType = AVFileType.m4a
 
     return exporter
@@ -73,8 +69,8 @@ func exportFile(_ paths:[String], with name:String) -> AVAssetExportSession?{
 let group = DispatchGroup()
 
 print("let's export")
-[ exportFile(edmssSegments, with: "EDMSoundSystem"),
-  exportFile(csSegments, with: "CoffeeAndSushi")]
+[exportFile(edmssSegments, with: "EDMSoundSystem", isOld: true),
+  exportFile(csSegments, with: "CoffeeAndSushi", isOld: true)]
     .filter{$0 != nil}
     .forEach{ exporter in
         group.enter()
